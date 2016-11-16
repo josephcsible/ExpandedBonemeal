@@ -47,7 +47,7 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.Event.Result;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-@Mod(modid = ExpandedBonemeal.MODID, version = ExpandedBonemeal.VERSION, guiFactory = "josephcsible.expandedbonemeal.ExpandedBonemealGuiFactory")
+@Mod(modid = ExpandedBonemeal.MODID, version = ExpandedBonemeal.VERSION, acceptedMinecraftVersions = "[1.9,)", guiFactory = "josephcsible.expandedbonemeal.ExpandedBonemealGuiFactory")
 public class ExpandedBonemeal
 {
 	// XXX duplication with mcmod.info and build.gradle
