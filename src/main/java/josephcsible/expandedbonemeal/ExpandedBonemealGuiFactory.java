@@ -59,4 +59,13 @@ public class ExpandedBonemealGuiFactory implements IModGuiFactory {
 		return null;
 	}
 
+	// TODO clean these 2 methods up when we switch to 1.12 MDK
+	public boolean hasConfigGui() {
+		return true;
+	}
+
+	public GuiScreen createConfigGui(GuiScreen parentScreen) {
+		return new ExpandedBonemealGuiConfig(parentScreen);
+	}
+
 }
