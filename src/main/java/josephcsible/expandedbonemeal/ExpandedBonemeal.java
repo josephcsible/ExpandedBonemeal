@@ -55,7 +55,7 @@ public class ExpandedBonemeal
 {
 	// XXX duplication with mcmod.info and build.gradle
 	public static final String MODID = "expandedbonemeal";
-	public static final String VERSION = "1.0.2";
+	public static final String VERSION = "1.1.0";
 
 	public static Configuration config;
 	protected static int cactus, sugarcane;
