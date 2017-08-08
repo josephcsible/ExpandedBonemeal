@@ -37,7 +37,10 @@ import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.common.config.Property;
+import net.minecraftforge.common.config.Property.Type;
 import net.minecraftforge.event.entity.player.BonemealEvent;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent.OnConfigChangedEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -55,7 +58,8 @@ public class ExpandedBonemeal
 	public static final String VERSION = "1.0.2";
 
 	public static Configuration config;
-	protected static boolean cactus, sugarcane, netherWart, melon, pumpkin, vine, lilyPad, deadBush, flowers, chorusFlower, moss;
+	protected static int cactus, sugarcane;
+	protected static boolean netherWart, melon, pumpkin, vine, lilyPad, deadBush, flowers, chorusFlower, moss;
 
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
@@ -75,9 +79,30 @@ public class ExpandedBonemeal
 			syncConfig();
 	}
 
+	protected static int getIntFormerBoolean(String key, String comment) {
+		// This field was a boolean in a previous version of this mod.
+		// If the user set the boolean to false, make this integer 0 instead of 16.
+		boolean oldValue = true;
+		ConfigCategory cat = config.getCategory(Configuration.CATEGORY_GENERAL);
+		if (cat.containsKey(key))
+		{
+			Property prop = cat.get(key);
+			if(prop.getType() == Type.BOOLEAN) {
+				oldValue = prop.getBoolean();
+				cat.remove(key);
+			}
+		}
+		Property prop = config.get(Configuration.CATEGORY_GENERAL, key, 16, comment, 0, 16);
+		if(!oldValue) {
+			prop.set(0);
+		}
+		return prop.getInt();
+	}
+
 	protected static void syncConfig() {
-		cactus = config.get(Configuration.CATEGORY_GENERAL, "cactus", true, "Whether using bone meal on a cactus should immediately attempt to add an additional block").getBoolean();
-		sugarcane = config.get(Configuration.CATEGORY_GENERAL, "sugarcane", true, "Whether using bone meal on sugar canes should immediately attempt to add an additional block").getBoolean();
+		cactus = getIntFormerBoolean("cactus", "How many stages bone meal should cause cacti to grow. 16 means always grow a new block, and 0 means bone meal doesn't work on cacti.");
+		sugarcane = getIntFormerBoolean("sugarcane", "How many stages bone meal should cause sugar canes to grow. 16 means always grow a new block, and 0 means bone meal doesn't work on sugar canes.");
+
 		netherWart = config.get(Configuration.CATEGORY_GENERAL, "netherWart", true, "Whether using bone meal on nether wart should immediately advance it to the next growth stage").getBoolean();
 		melon = config.get(Configuration.CATEGORY_GENERAL, "melon", true, "Whether using bone meal on a mature melon stem should immediately attempt to grow a melon").getBoolean();
 		pumpkin = config.get(Configuration.CATEGORY_GENERAL, "pumpkin", true, "Whether using bone meal on a mature pumpkin stem should immediately attempt to grow a pumpkin").getBoolean();
@@ -87,17 +112,21 @@ public class ExpandedBonemeal
 		flowers = config.get(Configuration.CATEGORY_GENERAL, "flowers", true, "Whether using bone meal on flowers should cause one to drop as an item").getBoolean();
 		chorusFlower = config.get(Configuration.CATEGORY_GENERAL, "chorusFlower", true, "Whether using bone meal on a chorus flower should immediately attempt to grow").getBoolean();
 		moss = config.get(Configuration.CATEGORY_GENERAL, "moss", true, "Whether using bone meal on cobblestone or stone bricks should cause moss to grow").getBoolean();
+
 		if(config.hasChanged())
 			config.save();
 	}
 
-	protected static void growCactusOrSugarcane(BonemealEvent event, Block block, World world, PropertyInteger ageProperty) {
+	protected static void growCactusOrSugarcane(BonemealEvent event, IBlockState state, Block block, World world, PropertyInteger ageProperty, int stages) {
 		BlockPos pos = event.getPos();
 		// if the player uses bonemeal on the bottom of a 2-high plant, do what they meant
 		while(world.getBlockState(pos.up()).getBlock() == block) {
 			pos = pos.up();
 		}
-		IBlockState state = world.getBlockState(pos).withProperty(ageProperty, 15);
+		// Advance the age by one less than bonemeal is supposed to advance by,
+		// since the updateTick call will advance it by one. Also, never exceed the
+		// maximum age of 15 (since pushing it to 16 in updateTick is what makes it grow).
+		state = state.withProperty(ageProperty, Math.min(state.getValue(ageProperty) + stages - 1, 15));
 		// don't bother even to notify the client here, since it's going to change again during updateTick
 		world.setBlockState(pos, state, 4);
 		block.updateTick(world, pos, state, world.rand);
@@ -133,9 +162,9 @@ public class ExpandedBonemeal
 		World world = event.getWorld();
 		// in the future, maybe add stuff for sponges, saplings, mushrooms, ferns, and dirt variants
 		if(block == Blocks.CACTUS) {
-			if(cactus) growCactusOrSugarcane(event, block, world, BlockCactus.AGE);
+			if(cactus > 0) growCactusOrSugarcane(event, state, block, world, BlockCactus.AGE, cactus);
 		} else if(block == Blocks.REEDS) {
-			if(sugarcane) growCactusOrSugarcane(event, block, world, BlockReed.AGE);
+			if(sugarcane > 0) growCactusOrSugarcane(event, state, block, world, BlockReed.AGE, sugarcane);
 		} else if(block == Blocks.NETHER_WART) {
 			if(netherWart) {
 				int age = state.getValue(BlockNetherWart.AGE);
