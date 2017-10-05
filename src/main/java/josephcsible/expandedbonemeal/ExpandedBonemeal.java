@@ -22,6 +22,7 @@ package josephcsible.expandedbonemeal;
 import java.util.Random;
 
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockBush;
 import net.minecraft.block.BlockCactus;
 import net.minecraft.block.BlockChorusFlower;
 import net.minecraft.block.BlockNetherWart;
@@ -59,7 +60,7 @@ public class ExpandedBonemeal
 
 	public static Configuration config;
 	protected static int cactus, sugarcane;
-	protected static boolean netherWart, melon, pumpkin, vine, lilyPad, deadBush, flowers, chorusFlower, moss;
+	protected static boolean netherWart, melon, pumpkin, vine, lilyPad, deadBush, flowers, chorusFlower, mycelium, moss;
 
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
@@ -111,6 +112,7 @@ public class ExpandedBonemeal
 		deadBush = config.get(Configuration.CATEGORY_GENERAL, "deadBush", true, "Whether using bone meal on sand or hardened clay should grow a dead bush").getBoolean();
 		flowers = config.get(Configuration.CATEGORY_GENERAL, "flowers", true, "Whether using bone meal on flowers should cause one to drop as an item").getBoolean();
 		chorusFlower = config.get(Configuration.CATEGORY_GENERAL, "chorusFlower", true, "Whether using bone meal on a chorus flower should immediately attempt to grow").getBoolean();
+		mycelium = config.get(Configuration.CATEGORY_GENERAL, "mycelium", true, "Whether using bone meal on mycelium should cause mushrooms to grow").getBoolean();
 		moss = config.get(Configuration.CATEGORY_GENERAL, "moss", true, "Whether using bone meal on cobblestone or stone bricks should cause moss to grow").getBoolean();
 
 		if(config.hasChanged())
@@ -152,6 +154,29 @@ public class ExpandedBonemeal
 		if (event.getBlock().getValue(property) == from) {
 			event.getWorld().setBlockState(event.getPos(), event.getBlock().withProperty(property, to), 2);
 			event.setResult(Result.ALLOW);
+		}
+	}
+
+	protected static void growMushrooms(BonemealEvent event) {
+		BlockPos startpos = event.getPos().up();
+		World world = event.getWorld();
+		Random rand = world.rand;
+
+		attemptLoop:
+		for (int attempt = 0; attempt < 16; ++attempt) {
+			BlockPos pos = startpos;
+			for (int moves = 0; moves < attempt / 2; ++moves) {
+				pos = pos.add(rand.nextInt(3) - 1, (rand.nextInt(3) - 1) * rand.nextInt(3) / 2, rand.nextInt(3) - 1);
+				if (world.getBlockState(pos.down()).getBlock() != Blocks.MYCELIUM || world.getBlockState(pos).isNormalCube())
+					continue attemptLoop;
+			}
+
+			if (world.isAirBlock(pos)) {
+				BlockBush block = rand.nextInt(3) == 0 ? Blocks.RED_MUSHROOM : Blocks.BROWN_MUSHROOM;
+				IBlockState state = block.getDefaultState();
+				if(block.canBlockStay(world, pos, state))
+					world.setBlockState(pos, state);
+			}
 		}
 	}
 
@@ -213,6 +238,8 @@ public class ExpandedBonemeal
 					event.setResult(Result.ALLOW);
 				}
 			}
+		} else if(block == Blocks.MYCELIUM) {
+			if(mycelium) growMushrooms(event);
 		} else if(moss) {
 			if(block == Blocks.COBBLESTONE) {
 				world.setBlockState(event.getPos(), Blocks.MOSSY_COBBLESTONE.getDefaultState(), 2);
