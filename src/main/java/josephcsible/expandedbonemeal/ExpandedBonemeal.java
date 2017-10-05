@@ -178,6 +178,8 @@ public class ExpandedBonemeal
 					world.setBlockState(pos, state);
 			}
 		}
+
+		event.setResult(Result.ALLOW);
 	}
 
 	@SubscribeEvent
