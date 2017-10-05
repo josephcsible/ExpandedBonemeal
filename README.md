@@ -8,6 +8,7 @@ It gives bone meal the following new abilities:
 - Generating melons and pumpkins from their mature stems
 - Duplicating lily pads and flowers as items (like sunflowers in vanilla)
 - Generating dead bushes on sand, hardened clay, and stained clay
+- Generating mushrooms on mycelium
 - Turning cobblestone and stone bricks into their mossy variants
 
 ### How do I use this mod?
